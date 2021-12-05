@@ -124,8 +124,9 @@ XpraClient.prototype.init_state = function(container) {
 	this.cipher_out_caps = null;
 	// detect locale change:
 	this.browser_language = Utilities.getFirstBrowserLanguage();
-	this.browser_language_change_embargo_time = 0;
-	this.key_layout = null;
+	// this.browser_language_change_embargo_time = 0;
+	// this.key_layout = null;
+    this.key_layout = this._get_keyboard_layout();
 	this.last_keycode_pressed = 0;
 	// mouse
 	this.last_button_event = [-1, false, -1, -1];
@@ -701,43 +702,55 @@ XpraClient.prototype._check_browser_language = function(key_layout) {
 	 * (ignoring the keyboard_layout preference)
 	 */
 	const now = performance.now();
-	if (now<this.browser_language_change_embargo_time) {
-		return;
+	// if (now<this.browser_language_change_embargo_time) {
+	// 	return;
+	// }
+    if (this.key_layout==key_layout) return;
+
+    this.clog("input language changed from", this.key_layout, "to", key_layout);
+
+	var new_layout = key_layout;
+	if (new_layout==null) {
+		var kb_layout = this._get_keyboard_layout();
+		new_layout = this.key_layout == kb_layout ? "us" : kb_layout;
 	}
-	let new_layout;
-	if (key_layout) {
-		new_layout = key_layout;
-	}
-	else {
-		//we may have used a different layout for a specific key,
-		//and now this new key doesn't need it anymore,
-		//so we may want to switch back to the original layout:
-		const l = Utilities.getFirstBrowserLanguage();
-		if (l && this.browser_language != l) {
-			//if the browser language has changed,
-			//this takes precedence over the configuration
-			this.clog("browser language changed from", this.browser_language, "to", l);
-			this.browser_language = l;
-			new_layout = Utilities.getKeyboardLayout();
-		}
-		else {
-			//this will honour the setting supplied by the user on the connect page
-			//or default to Utilities.getKeyboardLayout()
-			new_layout = this._get_keyboard_layout() || "us";
-		}
-	}
-	if (new_layout!=null && this.key_layout!=new_layout) {
-		this.key_layout = new_layout;
-		this.clog("keyboard layout changed from", this.key_layout, "to", key_layout);
-		this.send(["layout-changed", new_layout, ""]);
-		//changing the language too quickly can cause problems server side,
-		//wait a bit before checking again:
-		this.browser_language_change_embargo_time = now + 1000;
-	}
-	else {
-		//check again after 100ms minimum
-		this.browser_language_change_embargo_time = now + 100;
-	}
+
+	// let new_layout;
+	// if (key_layout) {
+	// 	new_layout = key_layout;
+	// }
+	// else {
+	// 	//we may have used a different layout for a specific key,
+	// 	//and now this new key doesn't need it anymore,
+	// 	//so we may want to switch back to the original layout:
+	// 	const l = Utilities.getFirstBrowserLanguage();
+	// 	if (l && this.browser_language != l) {
+	// 		//if the browser language has changed,
+	// 		//this takes precedence over the configuration
+	// 		this.clog("browser language changed from", this.browser_language, "to", l);
+	// 		this.browser_language = l;
+	// 		new_layout = Utilities.getKeyboardLayout();
+	// 	}
+	// 	else {
+	// 		//this will honour the setting supplied by the user on the connect page
+	// 		//or default to Utilities.getKeyboardLayout()
+	// 		new_layout = this._get_keyboard_layout() || "us";
+	// 	}
+	// }
+	// if (new_layout!=null && this.key_layout!=new_layout) {
+	// 	this.key_layout = new_layout;
+	// 	this.clog("keyboard layout changed from", this.key_layout, "to", key_layout);
+	// 	this.send(["layout-changed", new_layout, ""]);
+	// 	//changing the language too quickly can cause problems server side,
+	// 	//wait a bit before checking again:
+	// 	this.browser_language_change_embargo_time = now + 1000;
+	// }
+	// else {
+	// 	//check again after 100ms minimum
+	// 	this.browser_language_change_embargo_time = now + 100;
+	// }
+    this.key_layout = key_layout;
+    this.send(["layout-changed", new_layout, ""]);    
 };
 
 
